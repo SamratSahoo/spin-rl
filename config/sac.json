@@ -1,0 +1,31 @@
+{
+    "algorithm": "sac",
+    "timesteps": 4800000,
+    "policy": "MultiInputPolicy",
+    "model": {
+        "policy_kwargs": {
+            "net_arch": {
+                "qf": [
+                    128,
+                    128
+                ],
+                "pi": [
+                    128,
+                    128
+                ]
+            },
+            "use_sde": false
+        },
+        "buffer_size": 100000,
+        "learning_starts": 1000,
+        "ent_coef": 0.1
+    },
+    "start_iter": 0,
+    "end_iter": 10,
+    "num_levels": 10,
+    "eval_recording_folder": "./recordings/sac",
+    "train_from_checkpoint": true,
+    "eval_freq": 8000,
+    "model_save_folder": "./models/sac",
+    "temp_dir": "./tmp/tmp_sac"
+}
