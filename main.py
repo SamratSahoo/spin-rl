@@ -54,6 +54,7 @@ def train_sb3(
         best_model_save_folder=model_save_folder,
         best_model_name=f"{algorithm}_best_model.zip",
         eval_freq=eval_freq,
+        eval_recording_folder=eval_recording_folder,
         algorithm=algorithm,
         checkpoint=(
             f"{model_save_folder}/{algorithm}_best_model"
@@ -63,7 +64,7 @@ def train_sb3(
     )
     sb3_runner.train(policy=policy, timesteps=timesteps, model_settings=model_settings)
 
-    model_recording = f"{eval_recording_folder}/{algorithm}_{round(time.time() * 1000)}"
+    model_recording = f"{eval_recording_folder}/{algorithm}_final"
     model_path = f"{os.path.abspath(model_save_folder)}/{algorithm}_best_model"
 
     sb3_runner.run_evaluation(

@@ -1,3 +1,4 @@
+import time
 from stable_baselines3 import PPO, SAC, TD3, DDPG
 import numpy as np
 from stable_baselines3.common.callbacks import (
@@ -22,6 +23,10 @@ class SetBestModelCallback(BaseCallback):
         assert self.parent is not None
 
         self.sb3.set_best_model()
+        model_recording = f"{self.sb3.eval_recording_folder}/{self.sb3.algorithm}_{round(time.time() * 1000)}.mp4"
+        model_path = f"{os.path.abspath(self.sb3.best_model_save_folder)}/{self.sb3.algorithm}_best_model"
+
+        self.sb3.run_evaluation(model_path=model_path, recording=model_recording)
 
         return True
 
@@ -35,9 +40,11 @@ class StableBaseLines3Runner:
         checkpoint=None,
         best_model_save_folder=None,
         best_model_name=None,
+        eval_recording_folder=None,
         eval_freq=500,
     ):
         self.env = env
+        self.algorithm = algorithm
         self.eval_env = eval_env
         self.model = None
         self.best_model = None
@@ -45,6 +52,7 @@ class StableBaseLines3Runner:
         self.model_class = {"sac": SAC, "ppo": PPO, "td3": TD3, "ddpg": DDPG}[algorithm]
         self.best_model_name = best_model_name
         self.best_model_save_folder = best_model_save_folder
+        self.eval_recording_folder = eval_recording_folder
 
         self.set_best_model_callback = EvalCallback(
             self.eval_env,
