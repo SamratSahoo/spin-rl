@@ -5,9 +5,10 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from algorithms.sb3 import StableBaseLines3Runner
 from environment import WrappedPenSpinEnv
 import gymnasium as gym
-
+import os
 import time
 
+os.environ['MUJOCO_GL'] = 'osmesa'
 
 def current_milli_time():
     return round(time.time() * 1000)

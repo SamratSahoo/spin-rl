@@ -1,0 +1,29 @@
+{
+    "algorithm": "ppo",
+    "timesteps": 4800000,
+    "policy": "MultiInputPolicy",
+    "model": {
+        "policy_kwargs": {
+            "net_arch": {
+                "qf": [
+                    256,
+                    128,
+                    128,
+                    64
+                ],
+                "pi": [
+                    256,
+                    128,
+                    128,
+                    64
+                ]
+            }
+        },
+        "buffer_size": 100000,
+        "learning_starts": 1000
+    },
+    "eval_recording_folder": "./recordings/ppo",
+    "eval_freq": 4000,
+    "model_save_folder": "./models/ppo",
+    "temp_dir": "./tmp_ppo"
+}

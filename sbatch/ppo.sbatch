@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -JSACTraining
+#SBATCH -JPPOTraining
 #SBATCH -N1 --ntasks-per-node=1
 #SBATCH --mem-per-cpu=8G --cpus-per-task=4
 #SBATCH --time=8:00:00
@@ -11,4 +11,4 @@
 module load anaconda3/2023.03
 source activate spin-rl
 cd /home/hice1/ssahoo61/Documents/spin-rl
-srun python main.py --model_config sac --env_config env
+srun python main.py --model_config ppo --env_config env
