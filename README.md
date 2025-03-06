@@ -12,6 +12,7 @@ module load anaconda3/2023.03
 ## Create conda environment
 conda create -n spin-rl python=3.12 mesalib glew glfw -c conda-forge -y
 conda activate spin-rl
+pip install -r requirements.txt
 echo "module load anaconda3/2023.03" >> ~/.bashrc
 
 # Install Mujoco Engine
@@ -38,6 +39,7 @@ pip install "cython<3"
 # compile Mujoco using GCC
 python
 import mujoco_py
+exit()
 ```
 
 ## Pace - Submitting a Job
