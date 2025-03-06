@@ -23,6 +23,7 @@
         "learning_starts": 1000
     },
     "eval_recording_folder": "./recordings/ppo",
+    "train_from_checkpoint": true,
     "eval_freq": 4000,
     "model_save_folder": "./models/ppo",
     "temp_dir": "./tmp_ppo"
