@@ -18,9 +18,7 @@
                     64
                 ]
             }
-        },
-        "buffer_size": 100000,
-        "learning_starts": 1000
+        }
     },
     "eval_recording_folder": "./recordings/ppo",
     "train_from_checkpoint": true,
