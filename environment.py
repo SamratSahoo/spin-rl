@@ -50,8 +50,13 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
 
         if self.current_step >= self.max_episode_steps:
             self.current_step = 0
-            terminated = True
             truncated = True
+            terminated = True
+        else:
+            # Not sure if the environment inherently truncates so explicitly setting it
+            truncated = False
+            terminated = False
+            
         return obs, reward, terminated, truncated, info
 
     def sample(self):
