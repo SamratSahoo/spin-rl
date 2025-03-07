@@ -119,8 +119,8 @@ class StableBaseLines3Runner:
 
         while True:
             action, _ = self.best_model.predict(current_state, deterministic=True)
-            next_state, reward, done, _, info = self.eval_env.step(action)
-            if done:
+            next_state, reward, terminate, truncate, info = self.eval_env.step(action)
+            if terminate or truncate:
                 break
             current_state = next_state
 
