@@ -12,7 +12,6 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         render_mode="rgb_array",
         reward_type="dense",
         max_episode_steps=500,
-        chunk_size=500,
         temp_dir="./tmp",
     ):
         super().__init__(
@@ -21,8 +20,6 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         )
         self.recording = False
         self.frames = []
-        self.chunk_size = chunk_size
-        self.temp_chunks = []
         self.current_step = 0
         self.max_episode_steps = max_episode_steps
         self.temp_dir = temp_dir

@@ -42,6 +42,7 @@ class StableBaseLines3Runner:
         best_model_name=None,
         eval_recording_folder=None,
         eval_freq=500,
+        tensorboard_log=None
     ):
         self.env = env
         self.algorithm = algorithm
@@ -53,6 +54,7 @@ class StableBaseLines3Runner:
         self.best_model_name = best_model_name
         self.best_model_save_folder = best_model_save_folder
         self.eval_recording_folder = eval_recording_folder
+        self.tensorboard_log = tensorboard_log
 
         self.set_best_model_callback = EvalCallback(
             self.eval_env,
@@ -87,11 +89,11 @@ class StableBaseLines3Runner:
 
         if self.checkpoint and os.path.exists(f"{self.checkpoint}.zip"):
             self.model = self.model_class.load(
-                f"{os.getcwd()}/{self.checkpoint}", env=self.env, device=device
+                f"{os.getcwd()}/{self.checkpoint}", env=self.env, device=device, tensorboard_log=self.tensorboard_log
             )
         else:
             self.model = self.model_class(
-                policy, self.env, verbose=1, device=device, **model_settings
+                policy, self.env, tensorboard_log=self.tensorboard_log, verbose=1, device=device, **model_settings
             )
 
         self.model.learn(

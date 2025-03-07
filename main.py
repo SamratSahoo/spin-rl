@@ -37,6 +37,7 @@ def train_sb3(
     train_from_checkpoint,
     reward_type,
     temp_dir,
+    tensorboard_log
 ):
     train_env_fns = [
         make_env(reward_type=reward_type, temp_dir=temp_dir)
@@ -57,6 +58,7 @@ def train_sb3(
         eval_freq=eval_freq,
         eval_recording_folder=eval_recording_folder,
         algorithm=algorithm,
+        tensorboard_log=tensorboard_log,
         checkpoint=(
             f"{model_save_folder}/{algorithm}_best_model"
             if train_from_checkpoint
@@ -104,6 +106,7 @@ if __name__ == "__main__":
     model_eval_freq = model_config["eval_freq"]
     model_train_from_checkpoint = model_config["train_from_checkpoint"]
     model_temp_dir = model_config["temp_dir"]
+    model_tensorboard_log = model_config["tensorboard_log"]
 
     env_parallel_envs = env_config["parallel_envs"]
     env_reward_type = env_config["reward_type"]
@@ -120,6 +123,7 @@ if __name__ == "__main__":
         parallel_envs=env_parallel_envs,
         reward_type=env_reward_type,
         temp_dir=model_temp_dir,
+        tensorboard_log=model_tensorboard_log
     )
 
     # env = WrappedPenSpinEnv(render_mode="rgb_array", max_episode_steps=300)
