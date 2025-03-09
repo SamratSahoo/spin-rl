@@ -88,6 +88,7 @@ class StableBaseLines3Runner:
             model_settings["action_noise"] = action_noise
 
         if self.checkpoint and os.path.exists(f"{self.checkpoint}.zip"):
+            print("Loading from Checkpoint", self.checkpoint)
             self.model = self.model_class.load(
                 f"{os.getcwd()}/{self.checkpoint}", env=self.env, device=device, tensorboard_log=self.tensorboard_log
             )
