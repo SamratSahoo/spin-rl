@@ -33,6 +33,10 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         self.target_rotation_speed = target_rotation_speed
 
         os.makedirs(self.temp_dir, exist_ok=True)
+        self.init_target_coords()
+
+    def init_target_coords(self):
+        self.set_target_coords(np.concatenate([self.get_pen_coords()[:3], angles_to_quaternion(0, np.pi/2, 0)]))
     
     def get_pen_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "object:joint")
