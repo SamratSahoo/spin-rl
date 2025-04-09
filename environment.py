@@ -36,7 +36,9 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         self.init_target_coords()
 
     def init_target_coords(self):
-        self.set_target_coords(np.concatenate([self.get_pen_coords()[:3], angles_to_quaternion(0, np.pi/2, 0)]))
+        coords = np.concatenate([self.get_pen_coords()[:3], angles_to_quaternion(0, np.pi/2, 0)])
+        self.set_target_coords(coords)
+        self.fixed_target_pos = coords[:3]
     
     def get_pen_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "object:joint")
@@ -113,10 +115,11 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
     
     def rotate_target(self):
         target_coords = self.get_target_coords()
+        target_pos = self.fixed_target_pos  
         target_rot = target_coords[3:]
         
         roll, pitch, yaw = quaternion_to_angles(*target_rot)
 
-        yaw += self.current_step * self.target_rotation_speed
+        yaw += self.target_rotation_speed
         new_rot = angles_to_quaternion(roll, pitch, yaw)
-        self.set_target_coords(np.concatenate((target_coords[:3], new_rot)))
+        self.set_target_coords(np.concatenate((target_pos, new_rot)))
