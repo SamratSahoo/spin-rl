@@ -17,7 +17,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         max_episode_steps=500,
         temp_dir="./tmp",
         render_overlay=True,
-        target_rotation_speed=0.1
+        target_rotation_speed=0.7
     ):
         super().__init__(
             render_mode=render_mode,
@@ -43,6 +43,9 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
     def get_pen_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "object:joint")
     
+    def set_pen_coords(self, coords):
+        self._utils.set_joint_qpos(self.model, self.data, "object:joint", coords)
+
     def get_target_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "target:joint")
 
@@ -94,6 +97,8 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         obs, reward, terminated, truncated, info = super().step(action)
 
         self.rotate_target()
+
+        print(self.compute_reward(self.get_pen_coords(), self.get_target_coords(), None))
 
         self.current_step += 1
         if self.recording:
