@@ -22,7 +22,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         super().__init__(
             render_mode=render_mode,
             reward_type=reward_type,
-            target_position="fixed",
+            target_position="ignore",
         )
         self.recording = False
         self.frames = []
@@ -91,9 +91,9 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         imageio.mimsave(recording_name, self.frames, fps=30)
 
     def step(self, action):
-        self.rotate_target()
-
         obs, reward, terminated, truncated, info = super().step(action)
+
+        self.rotate_target()
 
         self.current_step += 1
         if self.recording:
