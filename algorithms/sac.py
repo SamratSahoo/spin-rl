@@ -234,13 +234,13 @@ class SACTrainer:
                 data = self.rb.sample(self.batch_size)
                 with torch.no_grad():
                     next_state_actions, next_state_log_pi, _ = actor.get_action(torch.tensor(data.next_observations, dtype=torch.float32))
-                    qf1_next_target = qf1_target(data.next_observations, next_state_actions)
-                    qf2_next_target = qf2_target(data.next_observations, next_state_actions)
+                    qf1_next_target = qf1_target(torch.tensor(data.next_observations, dtype=torch.float32), next_state_actions)
+                    qf2_next_target = qf2_target(torch.tensor(data.next_observations, dtype=torch.float32), next_state_actions)
                     min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - alpha * next_state_log_pi
                     next_q_value = data.rewards.flatten() + (1 - data.dones.flatten()) * self.gamma * (min_qf_next_target).view(-1)
 
-                qf1_a_values = qf1(data.observations, data.actions).view(-1)
-                qf2_a_values = qf2(data.observations, data.actions).view(-1)
+                qf1_a_values = qf1(torch.tensor(data.observations, dtype=torch.float32), torch.tensor(data.actions, dtype=torch.float32)).view(-1)
+                qf2_a_values = qf2(torch.tensor(data.observations, dtype=torch.float32), torch.tensor(data.actions, dtype=torch.float32)).view(-1)
                 qf1_loss = F.mse_loss(qf1_a_values, next_q_value)
                 qf2_loss = F.mse_loss(qf2_a_values, next_q_value)
                 qf_loss = qf1_loss + qf2_loss
@@ -254,9 +254,9 @@ class SACTrainer:
                     for _ in range(
                         self.policy_frequency
                     ):  # compensate for the delay by doing 'actor_update_interval' instead of 1
-                        pi, log_pi, _ = actor.get_action(data.observations)
-                        qf1_pi = qf1(data.observations, pi)
-                        qf2_pi = qf2(data.observations, pi)
+                        pi, log_pi, _ = actor.get_action(torch.tensor(data.observations, dtype=torch.float32))
+                        qf1_pi = qf1(torch.tensor(data.observations, dtype=torch.float32), pi)
+                        qf2_pi = qf2(torch.tensor(data.observations, dtype=torch.float32), pi)
                         min_qf_pi = torch.min(qf1_pi, qf2_pi)
                         actor_loss = ((alpha * log_pi) - min_qf_pi).mean()
 
@@ -266,7 +266,7 @@ class SACTrainer:
 
                         if self.autotune:
                             with torch.no_grad():
-                                _, log_pi, _ = actor.get_action(data.observations)
+                                _, log_pi, _ = actor.get_action(torch.tensor(data.observations, dtype=torch.float32))
                             alpha_loss = (-log_alpha.exp() * (log_pi + target_entropy)).mean()
 
                             a_optimizer.zero_grad()

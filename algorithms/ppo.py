@@ -181,13 +181,13 @@ class PPOTrainer:
                 rewards[step] = torch.tensor(reward).to(self.device).view(-1)
                 next_obs, next_done = torch.Tensor(next_obs['observation']).to(self.device), torch.Tensor(next_done).to(self.device)
 
-            if "final_info" in infos:
-                for reward in infos["final_info"]["episode"]["r"]:
-                    print(f"global_step={global_step}, episodic_return={reward}")
-                    self.writer.add_scalar("charts/episodic_return", reward, global_step)
+                if "final_info" in infos:
+                    for reward in infos["final_info"]["episode"]["r"]:
+                        print(f"global_step={global_step}, episodic_return={reward}")
+                        self.writer.add_scalar("charts/episodic_return", reward, global_step)
 
-                for length in infos["final_info"]["episode"]["l"]:
-                    self.writer.add_scalar("charts/episodic_length", length, global_step)
+                    for length in infos["final_info"]["episode"]["l"]:
+                        self.writer.add_scalar("charts/episodic_length", length, global_step)
 
             # bootstrap value if not done
             with torch.no_grad():
