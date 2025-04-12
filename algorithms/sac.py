@@ -174,7 +174,7 @@ class SACTrainer:
         self.tau = tau
 
 
-    def train(self, total_timesteps=500000, save_model=True):
+    def train(self, total_timesteps=20000000, save_model=True):
         max_action = float(self.envs.single_action_space.high[0])
         actor = Actor(self.envs).to(self.device)
         qf1 = SoftQNetwork(self.envs).to(self.device)
@@ -233,7 +233,7 @@ class SACTrainer:
             if global_step > self.learning_starts:
                 data = self.rb.sample(self.batch_size)
                 with torch.no_grad():
-                    next_state_actions, next_state_log_pi, _ = actor.get_action(data.next_observations)
+                    next_state_actions, next_state_log_pi, _ = actor.get_action(torch.tensor(data.next_observations, dtype=torch.float32))
                     qf1_next_target = qf1_target(data.next_observations, next_state_actions)
                     qf2_next_target = qf2_target(data.next_observations, next_state_actions)
                     min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - alpha * next_state_log_pi
