@@ -5,6 +5,8 @@ cloudpickle==3.1.1
 contourpy==1.3.1
 cycler==0.12.1
 Cython==0.29.37
+decorator==5.2.1
+docstring_parser==0.16
 etils==1.12.0
 Farama-Notifications==0.0.4
 fasteners==0.19
@@ -13,7 +15,7 @@ fonttools==4.56.0
 fsspec==2025.2.0
 glfw==2.8.0
 grpcio==1.70.0
-gymnasium==1.0.0
+gymnasium==1.1.1
 gymnasium-robotics==1.3.1
 imageio==2.37.0
 imageio-ffmpeg==0.6.0
@@ -25,6 +27,7 @@ markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 matplotlib==3.10.1
 mdurl==0.1.2
+moviepy==2.1.2
 mpmath==1.3.0
 mujoco==3.1.6
 mujoco-py==2.1.2.14
@@ -47,7 +50,8 @@ opencv-python==4.11.0.86
 packaging==24.2
 pandas==2.2.3
 pettingzoo==1.24.3
-pillow==11.1.0
+pillow==10.4.0
+proglog==0.1.11
 protobuf==5.29.3
 psutil==7.0.0
 pycparser==2.22
@@ -56,9 +60,12 @@ Pygments==2.19.1
 PyOpenGL==3.1.4
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0
+python-dotenv==1.1.0
 pytz==2025.1
 rich==13.9.4
+seaborn==0.13.2
 setuptools==75.8.2
+shtab==1.7.1
 six==1.17.0
 stable_baselines3==2.5.0
 sympy==1.13.1
@@ -67,7 +74,9 @@ tensorboard-data-server==0.7.2
 torch==2.6.0
 tqdm==4.67.1
 triton==3.2.0
-typing_extensions==4.12.2
+typeguard==4.4.2
+typing_extensions==4.13.2
+tyro==0.9.18
 tzdata==2025.1
 Werkzeug==3.1.3
 wheel==0.45.1

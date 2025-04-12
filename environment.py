@@ -98,8 +98,6 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
 
         self.rotate_target()
 
-        print(self.compute_reward(self.get_pen_coords(), self.get_target_coords(), None))
-
         self.current_step += 1
         if self.recording:
             self.frames.append(self.get_rgb_frame())
