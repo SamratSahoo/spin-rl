@@ -285,6 +285,7 @@ class PPOTrainer:
             model_path = f"runs/{self.run_name}/{self.exp_name}.cleanrl_model"
             torch.save(agent.state_dict(), model_path)
             evaluate(
+                self.env_type,
                 model_path,
                 make_env,
                 self.env_id,

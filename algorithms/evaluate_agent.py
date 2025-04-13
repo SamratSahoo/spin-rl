@@ -5,6 +5,7 @@ import torch
 
 
 def evaluate(
+        env_type,
     model_path: str,
     make_env: Callable,
     env_id: str,
@@ -15,7 +16,7 @@ def evaluate(
     capture_video: bool = True,
     gamma: float = 0.99,
 ):
-    envs = gym.vector.SyncVectorEnv([make_env(env_id, 0, capture_video, run_name, gamma, is_eval=True)])
+    envs = gym.vector.SyncVectorEnv([make_env(env_type, env_id, 0, capture_video, run_name, gamma, is_eval=True)])
     agent = Model(envs).to(device)
     agent.load_state_dict(torch.load(model_path, map_location=device))
     agent.eval()

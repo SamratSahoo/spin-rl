@@ -299,6 +299,7 @@ class SACTrainer:
             torch.save(qf1.state_dict(), critic_model_path)
 
             evaluate(
+                self.env_type,
                 actor_model_path,
                 make_env,
                 self.env_id,
