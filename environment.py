@@ -17,7 +17,6 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         max_episode_steps=500,
         temp_dir="./tmp",
         render_overlay=True,
-        target_rotation_speed=0.7
     ):
         super().__init__(
             render_mode=render_mode,
@@ -30,27 +29,16 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         self.max_episode_steps = max_episode_steps
         self.temp_dir = temp_dir
         self.render_overlay = render_overlay
-        self.target_rotation_speed = target_rotation_speed
+        self.prev_pen_coords = None
+        self.accumulated_reward = 0.0
 
         os.makedirs(self.temp_dir, exist_ok=True)
-        self.init_target_coords()
-
-    def init_target_coords(self):
-        coords = np.concatenate([self.get_pen_coords()[:3], angles_to_quaternion(0, np.pi/2, 0)])
-        self.set_target_coords(coords)
-        self.fixed_target_pos = coords[:3]
     
     def get_pen_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "object:joint")
     
     def set_pen_coords(self, coords):
         self._utils.set_joint_qpos(self.model, self.data, "object:joint", coords)
-
-    def get_target_coords(self):
-        return self._utils.get_joint_qpos(self.model, self.data, "target:joint")
-
-    def set_target_coords(self, coords):
-        self._utils.set_joint_qpos(self.model, self.data, "target:joint", coords)
     
     def get_rgb_frame(self):
         frame = self.mujoco_renderer.render("rgb_array")
@@ -71,11 +59,13 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         text2 = f"Pen Quat: {pen_coords[3]:.3f}, {pen_coords[4]:.3f}, {pen_coords[5]:.3f}, {pen_coords[6]:.3f}"
         text3 = f"Target Pos: x={target_coords[0]:.3f}, y={target_coords[1]:.3f}, z={target_coords[2]:.3f}"
         text4 = f"Target Quat: {target_coords[3]:.3f}, {target_coords[4]:.3f}, {target_coords[5]:.3f}, {target_coords[6]:.3f}"
+        text5 = f"Accumulated Reward: {self.accumulated_reward:.3f}"
         
         draw.text((10, 10), text, fill=(255, 0, 0))
         draw.text((10, 30), text2, fill=(255, 0, 0))
         draw.text((10, 50), text3, fill=(0, 0, 255))
         draw.text((10, 70), text4, fill=(0, 0, 255))
+        draw.text((10, 90), text5, fill=(0, 128, 0))
         
         return np.array(img)
 
@@ -96,10 +86,27 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
     def _save_video(self, recording_name):
         imageio.mimsave(recording_name, self.frames, fps=30)
 
-    def step(self, action):
-        obs, reward, terminated, truncated, info = super().step(action)
+    def compute_reward(self):
+        if self.prev_coords is None:
+            return 0.0
 
-        self.rotate_target()
+        prev_rot = self.prev_coords[3:]
+        curr_rot = self.get_pen_coords()[3:]
+
+        _, _, prev_yaw = quaternion_to_angles(*prev_rot)
+        roll, pitch, curr_yaw = quaternion_to_angles(*curr_rot)
+
+        delta_yaw = curr_yaw - prev_yaw
+        delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
+        spin_reward = max(delta_yaw, 0.0) * 5
+        stability_bonus = -(roll**2 + (pitch - np.pi/2)**2)
+        return spin_reward + stability_bonus
+
+    def step(self, action):
+        obs, _, terminated, truncated, info = super().step(action)
+
+        reward = self.compute_reward()
+        self.accumulated_reward += reward
 
         self.current_step += 1
         if self.recording:
@@ -110,7 +117,6 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
             truncated = True
             terminated = True
         else:
-            # Not sure if the environment inherently truncates so explicitly setting it
             truncated = False
             terminated = False
 
@@ -118,14 +124,3 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
 
     def sample(self):
         return self.action_space.sample()
-    
-    def rotate_target(self):
-        target_coords = self.get_target_coords()
-        target_pos = self.fixed_target_pos  
-        target_rot = target_coords[3:]
-        
-        roll, pitch, yaw = quaternion_to_angles(*target_rot)
-
-        yaw += self.target_rotation_speed
-        new_rot = angles_to_quaternion(roll, pitch, yaw)
-        self.set_target_coords(np.concatenate((target_pos, new_rot)))
