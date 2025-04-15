@@ -5,7 +5,7 @@ import torch
 
 
 def evaluate(
-        env_type,
+    env_type,
     model_path: str,
     make_env: Callable,
     env_id: str,

@@ -79,11 +79,14 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         
         return np.array(img)
 
+    def render(self):
+        return self.get_rgb_frame()
+    
     def start_recording(self):
         self.recording = True
         self.frames = []
 
-    def stop_recording(self, recording_name="random_policy.mp4"):
+    def stop_recording(self, recording_name="runs/eval/random_policy.mp4"):
         if self.recording and self.frames:
             self._save_video(recording_name)
 
