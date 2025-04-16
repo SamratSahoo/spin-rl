@@ -14,7 +14,9 @@ def run_random_eval():
         reward_type="dense", temp_dir=f"./tmp/eval", 
                 max_episode_steps=300
     )
-    env = gym.wrappers.RecordVideo(base_env, f"runs/spin_rl__eval__{int(time.time())}/videos")
+    curr_time = int(time.time())
+    env = gym.wrappers.RecordVideo(base_env, f"runs/spin_rl__eval__{curr_time}/videos")
+    print(f"Video will be saved in: runs/spin_rl__eval__{curr_time}/videos")
     env.recorded_frames = []
     current_state, _ = env.reset()
 

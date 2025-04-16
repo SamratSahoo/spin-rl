@@ -45,27 +45,22 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         
         if self.render_overlay:
             pen_coords = self.get_pen_coords()
-            target_coords = self.get_target_coords()
 
-            frame = self._add_text_overlay(frame, pen_coords, target_coords)
+            frame = self._add_text_overlay(frame, pen_coords)
 
         return frame
     
-    def _add_text_overlay(self, frame, pen_coords, target_coords):
+    def _add_text_overlay(self, frame, pen_coords):
         img = Image.fromarray(frame)
         draw = ImageDraw.Draw(img)
         
         text = f"Pen Pos: x={pen_coords[0]:.3f}, y={pen_coords[1]:.3f}, z={pen_coords[2]:.3f}"
         text2 = f"Pen Quat: {pen_coords[3]:.3f}, {pen_coords[4]:.3f}, {pen_coords[5]:.3f}, {pen_coords[6]:.3f}"
-        text3 = f"Target Pos: x={target_coords[0]:.3f}, y={target_coords[1]:.3f}, z={target_coords[2]:.3f}"
-        text4 = f"Target Quat: {target_coords[3]:.3f}, {target_coords[4]:.3f}, {target_coords[5]:.3f}, {target_coords[6]:.3f}"
         text5 = f"Accumulated Reward: {self.accumulated_reward:.3f}"
         
         draw.text((10, 10), text, fill=(255, 0, 0))
         draw.text((10, 30), text2, fill=(255, 0, 0))
-        draw.text((10, 50), text3, fill=(0, 0, 255))
-        draw.text((10, 70), text4, fill=(0, 0, 255))
-        draw.text((10, 90), text5, fill=(0, 128, 0))
+        draw.text((10, 50), text5, fill=(0, 128, 0))
         
         return np.array(img)
 
@@ -86,26 +81,30 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
     def _save_video(self, recording_name):
         imageio.mimsave(recording_name, self.frames, fps=30)
 
-    def compute_reward(self):
-        if self.prev_coords is None:
+    def calc_reward(self):
+        if self.prev_pen_coords is None:
             return 0.0
 
-        prev_rot = self.prev_coords[3:]
+        prev_rot = self.prev_pen_coords[3:]
         curr_rot = self.get_pen_coords()[3:]
 
         _, _, prev_yaw = quaternion_to_angles(*prev_rot)
         roll, pitch, curr_yaw = quaternion_to_angles(*curr_rot)
 
+        alpha = 1
         delta_yaw = curr_yaw - prev_yaw
         delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
-        spin_reward = max(delta_yaw, 0.0) * 5
-        stability_bonus = -(roll**2 + (pitch - np.pi/2)**2)
-        return spin_reward + stability_bonus
+        spin_reward = max(delta_yaw, 0.0) * alpha
+
+        beta = 0.05
+        stability_penalty = -(roll**2 + (pitch - np.pi/2)**2) * beta
+
+        return spin_reward + stability_penalty
 
     def step(self, action):
         obs, _, terminated, truncated, info = super().step(action)
 
-        reward = self.compute_reward()
+        reward = self.calc_reward()
         self.accumulated_reward += reward
 
         self.current_step += 1
@@ -120,6 +119,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
             truncated = False
             terminated = False
 
+        self.prev_pen_coords = self.get_pen_coords()
         return obs, reward, terminated, truncated, info
 
     def sample(self):
