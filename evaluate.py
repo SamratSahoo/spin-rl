@@ -4,8 +4,9 @@ import os
 import gymnasium as gym
 import time
 import torch
-from algorithms.ppo import Agent
-from algorithms.sac import Actor
+from algorithms.ppo import Agent as PPOActor
+from algorithms.sac import Actor as SACActor
+from algorithms.ddpg import Actor as DDPGActor
 
 os.environ['MUJOCO_GL'] = 'osmesa'
 
@@ -54,7 +55,11 @@ if __name__ == "__main__":
     run_random_eval()
 
     # For SAC
-    # run_model_eval("your-model-path", Actor)
+    # run_model_eval("your-model-path", SACActor)
 
     # For PPO
-    # run_model_eval("your-model-path", Agent)
+    # run_model_eval("your-model-path", PPOActor)
+
+    # For DDPG
+    # run_model_eval("your-model-path", DDPGActor)
+

@@ -14,26 +14,7 @@ import tyro
 from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
 from algorithms.evaluate_agent import evaluate
-
-def make_env(env_type, env_id, idx, capture_video, run_name):
-    def thunk():
-        if capture_video and idx == 0:
-            env = env_type(
-                reward_type="dense", temp_dir=f"./tmp/{env_id}_{idx}", 
-                max_episode_steps=300
-            )
-            env = gym.wrappers.RecordVideo(env, f"runs/{run_name}/videos")
-            env.recorded_frames = []
-        else:
-            env = env_type(
-                reward_type="dense", temp_dir=f"./tmp/{env_id}_{idx}", 
-                max_episode_steps=300
-            )
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        return env
-
-    return thunk
-
+from algorithms.utils import make_env
 
 # ALGO LOGIC: initialize agent here:
 class SoftQNetwork(nn.Module):
@@ -138,7 +119,7 @@ class SACTrainer:
 
         self.run_name = f"{self.env_id}__{self.exp_name}__{self.seed}__{int(time.time())}"
         self.writer = SummaryWriter(f"runs/{self.run_name}")
-
+        self.env_type = env_type
         random.seed(self.seed)
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
