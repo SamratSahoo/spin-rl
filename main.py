@@ -3,7 +3,7 @@ import argparse
 from environment import WrappedPenSpinEnv
 import os
 import time
-from algorithms import ppo, sac
+from algorithms import ppo, sac, ddpg
 
 os.environ['MUJOCO_GL'] = 'osmesa'
 
@@ -23,13 +23,15 @@ if __name__ == "__main__":
         description="Run different RL algorithms on the Pen Spin Environment."
     )
     parser.add_argument(
-        "--algorithm", help="The model configuration file", default="ppo"
+        "--algorithm", help="The algorithm", default="sac"
     )
     args = parser.parse_args()
 
     if args.algorithm == "ppo":
-        ppo_trainer = ppo.PPOTrainer(env_type=WrappedPenSpinEnv)
-        ppo_trainer.train()
+        trainer = ppo.PPOTrainer(env_type=WrappedPenSpinEnv)
     elif args.algorithm == "sac":
-        sac_trainer = sac.SACTrainer(env_type=WrappedPenSpinEnv)
-        sac_trainer.train()
+        trainer = sac.SACTrainer(env_type=WrappedPenSpinEnv)
+    elif args.algorithm == "ddpg":
+        trainer = ddpg.DDPGTrainer(env_type=WrappedPenSpinEnv)
+
+    trainer.train()
