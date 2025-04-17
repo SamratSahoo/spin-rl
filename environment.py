@@ -97,7 +97,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         
         spin_reward = delta_yaw * alpha
 
-        drop_penalty = -100 if self.get_pen_coords()[2] < 0 else 0 
+        drop_penalty = -1 if self.get_pen_coords()[2] < 0 else 0 
         
         beta = 0.05
         stability_penalty = -(roll**2 + (pitch - np.pi/2)**2) * beta
