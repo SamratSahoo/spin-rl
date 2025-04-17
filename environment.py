@@ -93,12 +93,16 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         alpha = 1
         delta_yaw = curr_yaw - prev_yaw
         delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
-        spin_reward = max(delta_yaw, 0.0) * alpha
+        # spin_reward = max(delta_yaw, 0.0) * alpha
+        
+        spin_reward = delta_yaw * alpha
 
+        drop_penalty = -100 if self.get_pen_coords()[2] < 0 else 0 
+        
         beta = 0.05
         stability_penalty = -(roll**2 + (pitch - np.pi/2)**2) * beta
 
-        return spin_reward + stability_penalty
+        return spin_reward + stability_penalty + drop_penalty
 
     def step(self, action):
         obs, _, terminated, truncated, info = super().step(action)
