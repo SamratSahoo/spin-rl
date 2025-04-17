@@ -114,7 +114,7 @@ class DDPGTrainer:
         self.tau = tau
         self.policy_frequency = policy_frequency
     
-    def train(self, timesteps=2000000, save_model=True):
+    def train(self, timesteps=5000000, save_model=True):
     
         obs, _ = self.envs.reset(seed=self.seed)
         for global_step in range(timesteps):
@@ -123,7 +123,7 @@ class DDPGTrainer:
                 actions = np.array([self.envs.single_action_space.sample()])
             else:
                 with torch.no_grad():
-                    actions = self.actor(torch.Tensor(obs).to(self.device))
+                    actions = self.actor(torch.Tensor(obs['observation']).to(self.device))
                     actions += torch.normal(0, self.actor.action_scale * self.exploration_noise)
                     actions = actions.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 

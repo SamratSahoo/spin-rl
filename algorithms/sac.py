@@ -155,7 +155,7 @@ class SACTrainer:
         self.tau = tau
 
 
-    def train(self, total_timesteps=20000000, save_model=True):
+    def train(self, total_timesteps=5000000, save_model=True):
         max_action = float(self.envs.single_action_space.high[0])
         actor = Actor(self.envs).to(self.device)
         qf1 = SoftQNetwork(self.envs).to(self.device)

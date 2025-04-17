@@ -3,7 +3,7 @@ import argparse
 from environment import WrappedPenSpinEnv
 import os
 import time
-from algorithms import ppo, sac, ddpg
+from algorithms import ppo, sac, ddpg, vpg
 
 os.environ['MUJOCO_GL'] = 'osmesa'
 
@@ -33,5 +33,7 @@ if __name__ == "__main__":
         trainer = sac.SACTrainer(env_type=WrappedPenSpinEnv)
     elif args.algorithm == "ddpg":
         trainer = ddpg.DDPGTrainer(env_type=WrappedPenSpinEnv)
+    elif args.algorithm == "vpg":
+        trainer = vpg.VPGTrainer(env_type=WrappedPenSpinEnv)
 
     trainer.train()

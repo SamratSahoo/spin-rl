@@ -1,7 +1,6 @@
 import imageio
 import os
 import numpy as np
-import cv2
 from PIL import Image, ImageDraw, ImageFont
 from gymnasium_robotics.envs.shadow_dexterous_hand.manipulate_pen import (
     MujocoHandPenEnv,
@@ -33,7 +32,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         self.accumulated_reward = 0.0
 
         os.makedirs(self.temp_dir, exist_ok=True)
-    
+            
     def get_pen_coords(self):
         return self._utils.get_joint_qpos(self.model, self.data, "object:joint")
     
@@ -118,6 +117,9 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         else:
             truncated = False
             terminated = False
+
+        if truncated or terminated:
+            self.accumulated_reward = 0
 
         self.prev_pen_coords = self.get_pen_coords()
         return obs, reward, terminated, truncated, info
