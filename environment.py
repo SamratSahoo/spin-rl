@@ -90,19 +90,27 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         _, _, prev_yaw = quaternion_to_angles(*prev_rot)
         roll, pitch, curr_yaw = quaternion_to_angles(*curr_rot)
 
-        alpha = 1
         delta_yaw = curr_yaw - prev_yaw
         delta_yaw = (delta_yaw + np.pi) % (2 * np.pi) - np.pi
-        # spin_reward = max(delta_yaw, 0.0) * alpha
         
-        spin_reward = delta_yaw * alpha
-
-        drop_penalty = -1 if self.get_pen_coords()[2] < 0 else 0 
+        alpha = 5.0
+        spin_reward = delta_yaw * alpha 
         
-        beta = 0.05
-        stability_penalty = -(roll**2 + (pitch - np.pi/2)**2) * beta
-
-        return spin_reward + stability_penalty + drop_penalty
+        drop_penalty = -2 if self.get_pen_coords()[2] < 0.0 else 0.0
+        
+        beta = 0.2
+        ideal_pitch = np.pi/2
+        stability_reward = beta * (1.0 - min(abs(pitch - ideal_pitch), abs(roll)) / np.pi)
+        
+        height = self.get_pen_coords()[2]
+        optimal_height = 0.2
+        height_reward = 0.1 * (1.0 - min(abs(height - optimal_height), 0.1) * 10.0)
+        
+        min_rotation_speed = 0.1  # Minimum acceptable rotation per step
+        stationary_penalty = -2.0 if abs(delta_yaw) < min_rotation_speed else 0.0
+        
+        total_reward = spin_reward + stability_reward + height_reward + drop_penalty + stationary_penalty
+        return total_reward
 
     def step(self, action):
         obs, _, terminated, truncated, info = super().step(action)
