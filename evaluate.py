@@ -1,5 +1,5 @@
 import os
-from environment import WrappedPenSpinEnv
+from environment import WrappedPenSpinEnv, GeneralizedPenSpinEnv
 import os
 import gymnasium as gym
 import time
@@ -10,8 +10,8 @@ from algorithms.ddpg import Actor as DDPGActor
 
 os.environ['MUJOCO_GL'] = 'osmesa'
 
-def run_random_eval():
-    base_env = WrappedPenSpinEnv(
+def run_random_eval(env_type=WrappedPenSpinEnv):
+    base_env = env_type(
         reward_type="dense", temp_dir=f"./tmp/eval", 
                 max_episode_steps=300
     )
@@ -54,7 +54,7 @@ def run_model_eval(model_path: str, Model: torch.nn.Module):
     env.close()
 
 if __name__ == "__main__":
-    run_random_eval()
+    run_random_eval(env_type=GeneralizedPenSpinEnv)
 
     # For SAC
     # run_model_eval("your-model-path", SACActor)

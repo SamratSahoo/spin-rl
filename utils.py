@@ -31,3 +31,10 @@ def angles_to_quaternion(roll, pitch, yaw):
     qz = cr * cp * sy - sr * sp * cy
 
     return qw, qx, qy, qz
+
+def quat_from_angle_and_axis(angle, axis):
+    assert axis.shape == (3,)
+    axis /= np.linalg.norm(axis)
+    quat = np.concatenate([[np.cos(angle / 2.0)], np.sin(angle / 2.0) * axis])
+    quat /= np.linalg.norm(quat)
+    return quat
