@@ -265,6 +265,10 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
         self.goal = np.concatenate((curr_target[:3], target_quat))
     
     def _goal_distance(self, achieved_goal, desired_goal):
-        d_pos, d_rot = super()._goal_distance(achieved_goal, desired_goal)
-        d_rot = (d_rot + np.pi) % (2 * np.pi) - np.pi
-        return d_pos, d_rot
+        q1 = achieved_goal[3:]
+        q2 = desired_goal[3:]
+        cos_half = np.abs(np.dot(q1, q2))
+        cos_half = np.clip(cos_half, -1.0, 1.0)
+        angle = 2 * np.arccos(cos_half)
+
+        return 0.0, angle
