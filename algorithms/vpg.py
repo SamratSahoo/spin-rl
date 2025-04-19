@@ -41,7 +41,7 @@ class Actor(nn.Module):
 class VPGTrainer:
     def __init__(self, env_type, exp_name=os.path.basename(__file__)[: -len(".py")],env_id='spin_rl', seed=1, gamma=0.99, 
                  use_baseline=True, 
-                 learning_rate=1e-3, goal_size=0):
+                 learning_rate=1e-2, goal_size=0):
         self.seed = seed
         self.env_id = env_id
         self.exp_name = exp_name

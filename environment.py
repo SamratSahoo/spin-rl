@@ -223,10 +223,12 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
         target_coords = self.goal
 
         # self.set_pen_coords(target_coords)
-    
+        if pen_coords[2] < -0.1:
+            reward -= 10
+
         if self._is_success(pen_coords, target_coords):
             self.randomize_target_coords()
-            reward += 10
+            reward += 1000
         
         self.accumulated_reward += reward
 
@@ -251,7 +253,8 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
 
     def _is_success(self, achieved_goal, desired_goal):
         _, d_rot = self._goal_distance(achieved_goal, desired_goal)
-        return d_rot < self.rotation_threshold
+        pen_coords = self.get_pen_coords()
+        return d_rot < self.rotation_threshold and pen_coords[2] > -0.1
 
     def randomize_target_coords(self):
         angle = self.np_random.uniform(-np.pi, np.pi)
