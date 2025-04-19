@@ -150,7 +150,7 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
             render_mode=render_mode,
             reward_type=reward_type,
             target_position="ignore",
-            rotation_threshold=0.2,
+            rotation_threshold=0.05,
         )
         self.recording = False
         self.frames = []
@@ -268,3 +268,41 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
         d_pos, d_rot = super()._goal_distance(achieved_goal, desired_goal)
         d_rot = (d_rot + np.pi) % (2 * np.pi) - np.pi
         return d_pos, d_rot
+    
+class GeneralizedPenSpinEnvV2(MujocoHandPenEnv):
+    def __init__(
+        self,
+        render_mode="rgb_array",
+        reward_type="dense",
+        max_episode_steps=500,
+        temp_dir="./tmp",
+    ):
+        super().__init__(
+            render_mode=render_mode,
+            reward_type=reward_type,
+            target_position="random",
+            target_rotation="xyz"
+        )
+        self.current_step = 0
+        self.max_episode_steps = max_episode_steps
+        self.temp_dir = temp_dir
+
+    def _save_video(self, recording_name):
+        imageio.mimsave(recording_name, self.frames, fps=30)
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = super().step(action)
+        self.current_step += 1
+
+        if self._is_success(obs['achieved_goal'], obs['desired_goal']):
+            self.goal = self._sample_goal()
+            reward += 1000
+
+        if self.current_step >= self.max_episode_steps:
+            self.current_step = 0
+            terminated = True
+            truncated = True
+        return obs, reward, terminated, truncated, info
+
+    def sample(self):
+        return self.action_space.sample()

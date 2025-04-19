@@ -35,7 +35,7 @@ class Actor(nn.Module):
         distribution = Normal(mu, sigma)
 
         action = distribution.sample()
-        log_prob = distribution.log_prob(action).mean()
+        log_prob = distribution.log_prob(action).sum(dim=-1)
         return action, log_prob
 
 class VPGTrainer:
@@ -58,13 +58,15 @@ class VPGTrainer:
         torch.manual_seed(self.seed)
         torch.backends.cudnn.deterministic = True
         self.gamma = gamma
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.use_baseline = use_baseline
-        self.actor = Actor(self.envs, goal_size=self.goal_size)
+        self.actor = Actor(self.envs, goal_size=self.goal_size).to(self.device)
         self.learning_rate = learning_rate
         self.optimizer = optim.Adam(list(self.actor.parameters()), lr=self.learning_rate)
         self.writer = SummaryWriter(f"runs/{self.run_name}")
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.env_type = env_type
 
 
     def train(self, total_timesteps=5000000, save_model=True):
@@ -73,10 +75,10 @@ class VPGTrainer:
         rewards = []
         for global_step in range(total_timesteps):
             if self.goal_size > 0:
-                obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                obs_for_action = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
             else:
                 obs_for_action = obs['observation']
-            action, probs = self.actor.get_action(obs_for_action)
+            action, probs = self.actor.get_action(torch.tensor(obs_for_action, dtype=torch.float32, device=self.device))
             action = action.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 
             next_obs, reward, terminations, truncations, infos = self.envs.step(action)

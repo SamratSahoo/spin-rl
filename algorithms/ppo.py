@@ -30,18 +30,18 @@ class Agent(nn.Module):
     def __init__(self, envs, goal_size=0):
         super().__init__()
         self.critic = nn.Sequential(
-            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 1), std=1.0),
+            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 256)),
+            nn.ReLU(),
+            layer_init(nn.Linear(256, 256)),
+            nn.ReLU(),
+            layer_init(nn.Linear(256, 1), std=1.0),
         )
         self.actor_mean = nn.Sequential(
-            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, np.prod(envs.single_action_space.shape)), std=0.01),
+            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 256)),
+            nn.ReLU(),
+            layer_init(nn.Linear(256, 256)),
+            nn.ReLU(),
+            layer_init(nn.Linear(256, np.prod(envs.single_action_space.shape)), std=0.01),
         )
         self.actor_logstd = nn.Parameter(torch.zeros(1, np.prod(envs.single_action_space.shape)))
 
@@ -135,7 +135,7 @@ class PPOTrainer:
         global_step = 0
         next_obs, _ = self.envs.reset(seed=self.seed)
         if self.goal_size > 0:
-            next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal'][:, 3:]), axis=-1)
+            next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal']), axis=-1)
         else:
             next_obs_goal = next_obs['observation']
         next_obs = torch.Tensor(next_obs_goal).to(self.device)
@@ -165,7 +165,7 @@ class PPOTrainer:
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = torch.tensor(reward).to(self.device).view(-1)
                 if self.goal_size > 0:
-                    next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal'][:, 3:]), axis=-1)
+                    next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal']), axis=-1)
                 else:
                     next_obs_goal = next_obs['observation']
 
