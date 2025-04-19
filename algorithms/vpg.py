@@ -14,9 +14,9 @@ from algorithms.evaluate_agent import evaluate
 from torch.utils.tensorboard import SummaryWriter
 
 class Actor(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, goal_size=0):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod(), 256)
+        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + goal_size, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc_mu = nn.Linear(256, np.prod(env.single_action_space.shape))
         self.fc_sigma = nn.Linear(256, np.prod(env.single_action_space.shape))
@@ -41,7 +41,7 @@ class Actor(nn.Module):
 class VPGTrainer:
     def __init__(self, env_type, exp_name=os.path.basename(__file__)[: -len(".py")],env_id='spin_rl', seed=1, gamma=0.99, 
                  use_baseline=True, 
-                 learning_rate=1e-3):
+                 learning_rate=1e-3, goal_size=0):
         self.seed = seed
         self.env_id = env_id
         self.exp_name = exp_name
@@ -52,7 +52,7 @@ class VPGTrainer:
             autoreset_mode=gym.vector.vector_env.AutoresetMode.SAME_STEP
         )
         self.envs.single_observation_space['observation'].dtype = np.float32
-
+        self.goal_size = goal_size
         random.seed(self.seed)
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
@@ -60,7 +60,7 @@ class VPGTrainer:
         self.gamma = gamma
 
         self.use_baseline = use_baseline
-        self.actor = Actor(self.envs)
+        self.actor = Actor(self.envs, goal_size=self.goal_size)
         self.learning_rate = learning_rate
         self.optimizer = optim.Adam(list(self.actor.parameters()), lr=self.learning_rate)
         self.writer = SummaryWriter(f"runs/{self.run_name}")
@@ -72,8 +72,11 @@ class VPGTrainer:
         log_probs = []
         rewards = []
         for global_step in range(total_timesteps):
-
-            action, probs = self.actor.get_action(obs['observation'])
+            if self.goal_size > 0:
+                obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+            else:
+                obs_for_action = obs['observation']
+            action, probs = self.actor.get_action(obs_for_action)
             action = action.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 
             next_obs, reward, terminations, truncations, infos = self.envs.step(action)

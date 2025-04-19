@@ -27,17 +27,17 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 
 
 class Agent(nn.Module):
-    def __init__(self, envs):
+    def __init__(self, envs, goal_size=0):
         super().__init__()
         self.critic = nn.Sequential(
-            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod(), 64)),
+            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 64)),
             nn.Tanh(),
             layer_init(nn.Linear(64, 64)),
             nn.Tanh(),
             layer_init(nn.Linear(64, 1), std=1.0),
         )
         self.actor_mean = nn.Sequential(
-            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod(), 64)),
+            layer_init(nn.Linear(np.array(envs.single_observation_space['observation'].shape).prod() + goal_size, 64)),
             nn.Tanh(),
             layer_init(nn.Linear(64, 64)),
             nn.Tanh(),
@@ -69,16 +69,17 @@ class PPOTrainer:
     exp_name=os.path.basename(__file__)[: -len(".py")],
     learning_rate=2.5e-4,
     anneal_lr=True,
-    target_kl=None,
+    target_kl=0.1,
     gamma = 0.99,
     gae_lambda = 0.95,
     update_epochs=4,
     norm_adv=True,
     clip_coef=0.2,
     clip_vloss=True,
-    ent_coef= 0.1,
+    ent_coef= 0.01,
     vf_coef= 0.5,
-    max_grad_norm=0.5
+    max_grad_norm=0.5,
+    goal_size=0
     ):
         self.seed = seed
         self.env_id = env_id
@@ -91,6 +92,7 @@ class PPOTrainer:
         self.gae_lambda = gae_lambda
         self.update_epochs = update_epochs
         self.minibatch_size = int(self.batch_size // self.num_minibatches)
+        self.goal_size = goal_size
 
         self.run_name = f"{self.env_id}__{self.exp_name}__{self.seed}__{int(time.time())}"
         self.writer = SummaryWriter(f"runs/{self.run_name}")
@@ -120,10 +122,10 @@ class PPOTrainer:
 
     def train(self, total_timesteps=5000000, save_model=True):
         self.num_iterations = total_timesteps // self.batch_size
-        agent = Agent(self.envs).to(self.device)
+        agent = Agent(self.envs, goal_size=self.goal_size).to(self.device)
         optimizer = optim.Adam(agent.parameters(), lr=self.learning_rate, eps=1e-5)
 
-        obs = torch.zeros((self.num_steps, self.num_envs) + self.envs.single_observation_space['observation'].shape).to(self.device)
+        obs = torch.zeros((self.num_steps, self.num_envs) + (np.array(self.envs.single_observation_space['observation'].shape).prod() + self.goal_size,)).to(self.device)
         actions = torch.zeros((self.num_steps, self.num_envs) + self.envs.single_action_space.shape).to(self.device)
         logprobs = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
         rewards = torch.zeros((self.num_steps, self.num_envs)).to(self.device)
@@ -132,7 +134,11 @@ class PPOTrainer:
 
         global_step = 0
         next_obs, _ = self.envs.reset(seed=self.seed)
-        next_obs = torch.Tensor(next_obs['observation']).to(self.device)
+        if self.goal_size > 0:
+            next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal'][:, 3:]), axis=-1)
+        else:
+            next_obs_goal = next_obs['observation']
+        next_obs = torch.Tensor(next_obs_goal).to(self.device)
         next_done = torch.zeros(self.num_envs).to(self.device)
 
         for iteration in range(1, self.num_iterations + 1):
@@ -158,7 +164,12 @@ class PPOTrainer:
                 next_obs, reward, terminations, truncations, infos = self.envs.step(action.cpu().numpy())
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = torch.tensor(reward).to(self.device).view(-1)
-                next_obs, next_done = torch.Tensor(next_obs['observation']).to(self.device), torch.Tensor(next_done).to(self.device)
+                if self.goal_size > 0:
+                    next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal'][:, 3:]), axis=-1)
+                else:
+                    next_obs_goal = next_obs['observation']
+
+                next_obs, next_done = torch.Tensor(next_obs_goal).to(self.device), torch.Tensor(next_done).to(self.device)
 
                 if "final_info" in infos:
                     for reward in infos["final_info"]["episode"]["r"]:
@@ -185,7 +196,7 @@ class PPOTrainer:
                 returns = advantages + values
 
             # flatten the batch
-            b_obs = obs.reshape((-1,) + self.envs.single_observation_space['observation'].shape)
+            b_obs = obs.reshape((-1,) + (np.array(self.envs.single_observation_space['observation'].shape).prod() + self.goal_size,))
             b_logprobs = logprobs.reshape(-1)
             b_actions = actions.reshape((-1,) + self.envs.single_action_space.shape)
             b_advantages = advantages.reshape(-1)

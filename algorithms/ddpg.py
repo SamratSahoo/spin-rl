@@ -3,6 +3,7 @@ import random
 import time
 
 import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,9 +17,9 @@ from algorithms.utils import make_env
 
 # ALGO LOGIC: initialize agent here:
 class QNetwork(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, goal_size=0):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + np.prod(env.single_action_space.shape), 256)
+        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + np.prod(env.single_action_space.shape) + goal_size, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
 
@@ -31,9 +32,9 @@ class QNetwork(nn.Module):
 
 
 class Actor(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, goal_size=0):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod(), 256)
+        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + goal_size, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc_mu = nn.Linear(256, np.prod(env.single_action_space.shape))
         # action rescaling
@@ -65,7 +66,8 @@ class DDPGTrainer:
     gamma=0.99,
     tau=0.005,
     policy_frequency=2,
-    buffer_size=1e6
+    buffer_size=1e6,
+    goal_size=0
     ):
         self.seed = seed
         self.exp_name = exp_name
@@ -86,11 +88,12 @@ class DDPGTrainer:
 
         self.learning_rate = learning_rate
         self.env_type = env_type
+        self.goal_size = goal_size
 
-        self.actor = Actor(self.envs).to(self.device)
-        self.qf1 = QNetwork(self.envs).to(self.device)
-        self.qf1_target = QNetwork(self.envs).to(self.device)
-        self.target_actor = Actor(self.envs).to(self.device)
+        self.actor = Actor(self.envs, goal_size=self.goal_size).to(self.device)
+        self.qf1 = QNetwork(self.envs, goal_size=self.goal_size).to(self.device)
+        self.qf1_target = QNetwork(self.envs, goal_size=self.goal_size).to(self.device)
+        self.target_actor = Actor(self.envs, goal_size=self.goal_size).to(self.device)
         self.target_actor.load_state_dict(self.actor.state_dict())
         self.qf1_target.load_state_dict(self.qf1.state_dict())
         self.q_optimizer = optim.Adam(list(self.qf1.parameters()), lr=self.learning_rate)
@@ -100,7 +103,13 @@ class DDPGTrainer:
 
         self.rb = ReplayBuffer(
             int(self.buffer_size),
-            self.envs.single_observation_space['observation'],
+            spaces.Box(
+                low=float('-inf'), high=float('inf'), shape=(
+                    np.array(self.envs.single_observation_space['observation'].shape).prod() 
+                    + self.goal_size,
+                ), dtype=np.float32
+
+            ),
             self.envs.single_action_space,
             self.device,
             handle_timeout_termination=False,
@@ -123,7 +132,11 @@ class DDPGTrainer:
                 actions = np.array([self.envs.single_action_space.sample()])
             else:
                 with torch.no_grad():
-                    actions = self.actor(torch.Tensor(obs['observation']).to(self.device))
+                    if self.goal_size > 0:
+                        obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                    else:
+                        obs_for_action = obs['observation']
+                    actions = self.actor(torch.Tensor(obs_for_action).to(self.device))
                     actions += torch.normal(0, self.actor.action_scale * self.exploration_noise)
                     actions = actions.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 
@@ -138,15 +151,21 @@ class DDPGTrainer:
 
                 for length in infos["final_info"]["episode"]["l"]:
                     self.writer.add_scalar("charts/episodic_length", length, global_step)
-
-
+                
             # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
             real_next_obs = next_obs.copy()
             for idx, is_done in enumerate(np.logical_or(terminations, truncations)):
                 if is_done:
                     real_next_obs[idx] = infos["final_obs"][idx]
 
-            self.rb.add(obs['observation'], real_next_obs['observation'], actions, rewards, terminations, infos)
+            if self.goal_size > 0:
+                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal'][:, 3:]), axis=-1)
+            else:
+                obs_to_add = obs['observation']
+                next_obs_to_add = real_next_obs['observation']
+
+            self.rb.add(obs_to_add, next_obs_to_add, actions, rewards, terminations, infos)
 
             # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs

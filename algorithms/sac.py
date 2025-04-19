@@ -15,13 +15,17 @@ from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
 from algorithms.evaluate_agent import evaluate
 from algorithms.utils import make_env
+from gymnasium import spaces
 
+GOAL_SIZE = 4
+# Note inputs to nets here is observation + goal, not just observation
 # ALGO LOGIC: initialize agent here:
 class SoftQNetwork(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, goal_size=0):
         super().__init__()
         self.fc1 = nn.Linear(
-            np.array(env.single_observation_space['observation'].shape).prod() + np.prod(env.single_action_space.shape),
+            np.array(env.single_observation_space['observation'].shape).prod() + np.prod(env.single_action_space.shape)
+            + goal_size,
             256,
         )
         self.fc2 = nn.Linear(256, 256)
@@ -40,9 +44,9 @@ LOG_STD_MIN = -5
 
 
 class Actor(nn.Module):
-    def __init__(self, env):
+    def __init__(self, env, goal_size=0):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod(), 256)
+        self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + goal_size, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc_mean = nn.Linear(256, np.prod(env.single_action_space.shape))
         self.fc_logstd = nn.Linear(256, np.prod(env.single_action_space.shape))
@@ -107,7 +111,8 @@ class SACTrainer:
         autotune= True,
         batch_size=256,
         buffer_size=1e6,
-        tau=0.005
+        tau=0.005,
+        goal_size=0
     ):
         self.seed = seed
         self.env_id = env_id
@@ -141,9 +146,17 @@ class SACTrainer:
         self.buffer_size = buffer_size
         
         self.envs.single_observation_space.dtype = np.float32
+
+        self.goal_size = goal_size
         self.rb = ReplayBuffer(
             int(self.buffer_size),
-            self.envs.single_observation_space['observation'],
+            spaces.Box(
+                low=float('-inf'), high=float('inf'), shape=(
+                    np.array(self.envs.single_observation_space['observation'].shape).prod() 
+                    + self.goal_size,
+                ), dtype=np.float32
+
+            ),
             self.envs.single_action_space,
             self.device,
             n_envs=self.num_envs,
@@ -157,11 +170,11 @@ class SACTrainer:
 
     def train(self, total_timesteps=5000000, save_model=True):
         max_action = float(self.envs.single_action_space.high[0])
-        actor = Actor(self.envs).to(self.device)
-        qf1 = SoftQNetwork(self.envs).to(self.device)
-        qf2 = SoftQNetwork(self.envs).to(self.device)
-        qf1_target = SoftQNetwork(self.envs).to(self.device)
-        qf2_target = SoftQNetwork(self.envs).to(self.device)
+        actor = Actor(self.envs, goal_size=self.goal_size).to(self.device)
+        qf1 = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
+        qf2 = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
+        qf1_target = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
+        qf2_target = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
         qf1_target.load_state_dict(qf1.state_dict())
         qf2_target.load_state_dict(qf2.state_dict())
         q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=self.q_lr)
@@ -184,7 +197,11 @@ class SACTrainer:
                 actions = np.array(
                     [self.envs.single_action_space.sample() for _ in range(self.envs.num_envs)])
             else:
-                actions, _, _ = actor.get_action(torch.Tensor(obs['observation']).to(self.device))
+                if self.goal_size > 0:
+                    obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                else:
+                    obs_for_action = obs['observation']
+                actions, _, _ = actor.get_action(torch.Tensor(obs_for_action).to(self.device))
                 actions = actions.detach().cpu().numpy()
 
             # TRY NOT TO MODIFY: execute the game and log data.
@@ -204,8 +221,15 @@ class SACTrainer:
             for idx, is_done in enumerate(np.logical_or(terminations, truncations)):
                 if is_done:
                     real_next_obs[idx] = infos["final_obs"][idx]
-
-            self.rb.add(obs['observation'], real_next_obs['observation'], actions, rewards, terminations, infos)
+            
+            if self.goal_size > 0:
+                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal'][:, 3:]), axis=-1)
+            else:
+                obs_to_add = obs['observation']
+                next_obs_to_add = real_next_obs['observation']
+            
+            self.rb.add(obs_to_add, next_obs_to_add, actions, rewards, terminations, infos)
 
             # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs

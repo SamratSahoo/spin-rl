@@ -96,7 +96,7 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
         alpha = 5.0
         spin_reward = delta_yaw * alpha 
         
-        drop_penalty = -2 if self.get_pen_coords()[2] < 0.0 else 0.0
+        drop_penalty = -5 if self.get_pen_coords()[2] < 0.0 else 0.0
         
         beta = 0.2
         ideal_pitch = np.pi/2
@@ -124,14 +124,12 @@ class WrappedPenSpinEnv(MujocoHandPenEnv):
 
         if self.current_step >= self.max_episode_steps:
             self.current_step = 0
+            self.accumulated_reward = 0
             truncated = True
             terminated = True
         else:
             truncated = False
             terminated = False
-
-        if truncated or terminated:
-            self.accumulated_reward = 0
 
         self.prev_pen_coords = self.get_pen_coords()
         return obs, reward, terminated, truncated, info
@@ -224,11 +222,13 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
         pen_coords = self.get_pen_coords()
         target_coords = self.goal
 
-        self.set_pen_coords(target_coords)
+        # self.set_pen_coords(target_coords)
     
         if self._is_success(pen_coords, target_coords):
             self.randomize_target_coords()
             reward += 10
+        
+        self.accumulated_reward += reward
 
         self.current_step += 1
         if self.recording:
@@ -236,14 +236,12 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
 
         if self.current_step >= self.max_episode_steps:
             self.current_step = 0
+            self.accumulated_reward = 0
             truncated = True
             terminated = True
         else:
             truncated = False
-            terminated = False
-
-        if truncated or terminated:
-            self.accumulated_reward = 0
+            terminated = False            
 
         self.prev_pen_coords = self.get_pen_coords()
         return obs, reward, terminated, truncated, info
