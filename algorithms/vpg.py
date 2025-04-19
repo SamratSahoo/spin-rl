@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch
 import numpy as np
 from torch.distributions import Normal
-from algorithms.utils import make_env
+from algorithms.utils import make_env, transform_obs
 import gymnasium as gym
 import time
 import os
@@ -74,10 +74,7 @@ class VPGTrainer:
         log_probs = []
         rewards = []
         for global_step in range(total_timesteps):
-            if self.goal_size > 0:
-                obs_for_action = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
-            else:
-                obs_for_action = obs['observation']
+            obs_for_action = transform_obs(obs, self.goal_size)
             action, probs = self.actor.get_action(torch.tensor(obs_for_action, dtype=torch.float32, device=self.device))
             action = action.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 

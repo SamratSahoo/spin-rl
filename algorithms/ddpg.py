@@ -13,7 +13,9 @@ from stable_baselines3.common.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
 
 from algorithms.evaluate_agent import evaluate
-from algorithms.utils import make_env
+from algorithms.utils import make_env, transform_obs
+
+
 
 # ALGO LOGIC: initialize agent here:
 class QNetwork(nn.Module):
@@ -132,10 +134,7 @@ class DDPGTrainer:
                 actions = np.array([self.envs.single_action_space.sample()])
             else:
                 with torch.no_grad():
-                    if self.goal_size > 0:
-                        obs_for_action = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
-                    else:
-                        obs_for_action = obs['observation']
+                    obs_for_action = transform_obs(obs, self.goal_size)
                     actions = self.actor(torch.Tensor(obs_for_action).to(self.device))
                     actions += torch.normal(0, self.actor.action_scale * self.exploration_noise)
                     actions = actions.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
@@ -157,13 +156,9 @@ class DDPGTrainer:
             for idx, is_done in enumerate(np.logical_or(terminations, truncations)):
                 if is_done:
                     real_next_obs[idx] = infos["final_obs"][idx]
-
-            if self.goal_size > 0:
-                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
-                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal']), axis=-1)
-            else:
-                obs_to_add = obs['observation']
-                next_obs_to_add = real_next_obs['observation']
+            
+            obs_to_add = transform_obs(obs, self.goal_size)
+            next_obs_to_add = transform_obs(real_next_obs, self.goal_size)
 
             self.rb.add(obs_to_add, next_obs_to_add, actions, rewards, terminations, infos)
 

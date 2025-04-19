@@ -18,9 +18,19 @@ if __name__ == "__main__":
         "--environment", help="The env", default="general"
     )
     args = parser.parse_args()
-    env_type = GeneralizedPenSpinEnvV2 if args.environment == "general" else WrappedPenSpinEnv
-    goal_size = 7 if args.environment == "general" else 0
-    env_id = "gen_spin_rl" if args.environment == "general" else "spin_rl"
+
+    if args.environment == "general":
+        env_id = "gen_spin_rl"
+        env_type = GeneralizedPenSpinEnv
+        goal_size = 4
+    elif args.environment == "general-v2":
+        env_id = "gen_v2_spin_rl"
+        env_type = GeneralizedPenSpinEnvV2
+        goal_size = 7
+    else:
+        env_id = "spin_rl"
+        env_type = WrappedPenSpinEnv
+        goal_size = 0
     
     if args.algorithm == "ppo":
         trainer = ppo.PPOTrainer(

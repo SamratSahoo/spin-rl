@@ -1,5 +1,5 @@
 import gymnasium as gym
-
+import numpy as np
 def make_env(env_type, env_id, idx, capture_video, run_name, is_eval=False):
     def thunk():
         if capture_video and idx == 0:
@@ -22,3 +22,12 @@ def make_env(env_type, env_id, idx, capture_video, run_name, is_eval=False):
         return env
 
     return thunk
+
+def transform_obs(obs, goal_size):
+    if goal_size == 7:
+        return np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
+
+    if goal_size == 4:
+        return np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+    
+    return obs['observation']

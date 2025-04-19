@@ -13,7 +13,7 @@ from sys import platform
 from torch.distributions.normal import Normal
 from torch.utils.tensorboard import SummaryWriter
 from algorithms.evaluate_agent import evaluate
-from algorithms.utils import make_env
+from algorithms.utils import make_env,transform_obs
 
 os.environ["MUJOCO_GL"] = "glfw" if platform == "darwin" else "osmesa"
 
@@ -134,10 +134,7 @@ class PPOTrainer:
 
         global_step = 0
         next_obs, _ = self.envs.reset(seed=self.seed)
-        if self.goal_size > 0:
-            next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal']), axis=-1)
-        else:
-            next_obs_goal = next_obs['observation']
+        next_obs_goal = transform_obs(next_obs, self.goal_size)
         next_obs = torch.Tensor(next_obs_goal).to(self.device)
         next_done = torch.zeros(self.num_envs).to(self.device)
 
@@ -164,11 +161,7 @@ class PPOTrainer:
                 next_obs, reward, terminations, truncations, infos = self.envs.step(action.cpu().numpy())
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = torch.tensor(reward).to(self.device).view(-1)
-                if self.goal_size > 0:
-                    next_obs_goal = np.concatenate((next_obs['observation'], next_obs['desired_goal']), axis=-1)
-                else:
-                    next_obs_goal = next_obs['observation']
-
+                next_obs_goal = transform_obs(next_obs, self.goal_size)
                 next_obs, next_done = torch.Tensor(next_obs_goal).to(self.device), torch.Tensor(next_done).to(self.device)
 
                 if "final_info" in infos:
