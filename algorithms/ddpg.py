@@ -59,7 +59,7 @@ class DDPGTrainer:
     env_id="spin_rl", 
     seed=1, 
     exp_name=os.path.basename(__file__)[: -len(".py")],
-    learning_rate=2.5e-4,
+    learning_rate=1e-3,
     learning_starts=25e3,
     exploration_noise=0.1,
     batch_size=256,
@@ -133,7 +133,7 @@ class DDPGTrainer:
             else:
                 with torch.no_grad():
                     if self.goal_size > 0:
-                        obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                        obs_for_action = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
                     else:
                         obs_for_action = obs['observation']
                     actions = self.actor(torch.Tensor(obs_for_action).to(self.device))
@@ -159,8 +159,8 @@ class DDPGTrainer:
                     real_next_obs[idx] = infos["final_obs"][idx]
 
             if self.goal_size > 0:
-                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
-                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal'][:, 3:]), axis=-1)
+                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
+                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal']), axis=-1)
             else:
                 obs_to_add = obs['observation']
                 next_obs_to_add = real_next_obs['observation']

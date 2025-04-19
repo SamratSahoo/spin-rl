@@ -198,7 +198,7 @@ class SACTrainer:
                     [self.envs.single_action_space.sample() for _ in range(self.envs.num_envs)])
             else:
                 if self.goal_size > 0:
-                    obs_for_action = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
+                    obs_for_action = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
                 else:
                     obs_for_action = obs['observation']
                 actions, _, _ = actor.get_action(torch.Tensor(obs_for_action).to(self.device))
@@ -223,8 +223,8 @@ class SACTrainer:
                     real_next_obs[idx] = infos["final_obs"][idx]
             
             if self.goal_size > 0:
-                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal'][:, 3:]), axis=-1)
-                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal'][:, 3:]), axis=-1)
+                obs_to_add = np.concatenate((obs['observation'], obs['desired_goal']), axis=-1)
+                next_obs_to_add = np.concatenate((real_next_obs['observation'], real_next_obs['desired_goal']), axis=-1)
             else:
                 obs_to_add = obs['observation']
                 next_obs_to_add = real_next_obs['observation']

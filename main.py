@@ -1,6 +1,6 @@
 import os
 import argparse
-from environment import WrappedPenSpinEnv, GeneralizedPenSpinEnv
+from environment import WrappedPenSpinEnv, GeneralizedPenSpinEnv, GeneralizedPenSpinEnvV2
 import os
 import time
 from algorithms import ppo, sac, ddpg, vpg
@@ -18,9 +18,9 @@ if __name__ == "__main__":
         "--environment", help="The env", default="general"
     )
     args = parser.parse_args()
-    env_type = GeneralizedPenSpinEnv if args.environment == "general" else WrappedPenSpinEnv
-    goal_size = 4 if env_type == GeneralizedPenSpinEnv else 0
-    env_id = "gen_spin_rl" if env_type == GeneralizedPenSpinEnv else "spin_rl"
+    env_type = GeneralizedPenSpinEnvV2 if args.environment == "general" else WrappedPenSpinEnv
+    goal_size = 7 if args.environment == "general" else 0
+    env_id = "gen_spin_rl" if args.environment == "general" else "spin_rl"
     
     if args.algorithm == "ppo":
         trainer = ppo.PPOTrainer(
