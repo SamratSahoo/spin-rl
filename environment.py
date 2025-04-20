@@ -150,7 +150,7 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
             render_mode=render_mode,
             reward_type=reward_type,
             target_position="ignore",
-            rotation_threshold=0.05,
+            rotation_threshold=0.2,
         )
         self.recording = False
         self.frames = []

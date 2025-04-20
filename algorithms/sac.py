@@ -169,7 +169,6 @@ class SACTrainer:
 
 
     def train(self, total_timesteps=5000000, save_model=True):
-        max_action = float(self.envs.single_action_space.high[0])
         actor = Actor(self.envs, goal_size=self.goal_size).to(self.device)
         qf1 = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
         qf2 = SoftQNetwork(self.envs, goal_size=self.goal_size).to(self.device)
