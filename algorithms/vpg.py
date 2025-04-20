@@ -69,7 +69,7 @@ class VPGTrainer:
         self.env_type = env_type
 
 
-    def train(self, total_timesteps=5000000, save_model=True):
+    def train(self, total_timesteps=10000000, save_model=True):
         obs, _ = self.envs.reset(seed=self.seed)
         log_probs = []
         rewards = []

@@ -125,7 +125,7 @@ class DDPGTrainer:
         self.tau = tau
         self.policy_frequency = policy_frequency
     
-    def train(self, timesteps=5000000, save_model=True):
+    def train(self, timesteps=10000000, save_model=True):
     
         obs, _ = self.envs.reset(seed=self.seed)
         for global_step in range(timesteps):

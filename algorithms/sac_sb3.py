@@ -17,5 +17,6 @@ class SB3SACTrainer:
         )
         self.model = SAC("MultiInputPolicy", self.envs, verbose=1, tensorboard_log=f"runs/{self.run_name}")
 
-    def train(self, total_timesteps=5000000):
+    def train(self, total_timesteps=10000000):
         self.model.learn(total_timesteps=total_timesteps, log_interval=4)
+        self.model.save(f"runs/{self.run_name}/actor")

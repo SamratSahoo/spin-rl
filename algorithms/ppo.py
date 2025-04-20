@@ -120,7 +120,7 @@ class PPOTrainer:
         self.max_grad_norm = max_grad_norm
 
 
-    def train(self, total_timesteps=5000000, save_model=True):
+    def train(self, total_timesteps=10000000, save_model=True):
         self.num_iterations = total_timesteps // self.batch_size
         agent = Agent(self.envs, goal_size=self.goal_size).to(self.device)
         optimizer = optim.Adam(agent.parameters(), lr=self.learning_rate, eps=1e-5)

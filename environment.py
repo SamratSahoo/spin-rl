@@ -150,7 +150,7 @@ class GeneralizedPenSpinEnv(MujocoHandPenEnv):
             render_mode=render_mode,
             reward_type=reward_type,
             target_position="ignore",
-            rotation_threshold=0.2,
+            rotation_threshold=0.3,
         )
         self.recording = False
         self.frames = []
@@ -284,11 +284,13 @@ class GeneralizedPenSpinEnvV2(MujocoHandPenEnv):
             render_mode=render_mode,
             reward_type=reward_type,
             target_position="random",
-            target_rotation="xyz"
+            target_rotation="xyz",
+            rotation_threshold=0.2,
         )
         self.current_step = 0
         self.max_episode_steps = max_episode_steps
         self.temp_dir = temp_dir
+        self.distance_threshold = 0.05
 
     def _save_video(self, recording_name):
         imageio.mimsave(recording_name, self.frames, fps=30)
