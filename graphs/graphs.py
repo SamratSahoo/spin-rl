@@ -35,6 +35,8 @@ def create_graph(approach="env_gz", graph_type="episodic_returns"):
 
         timesteps = data['Step']
         values = data['Value'].ewm(span=50, adjust=False).mean()
+        print(approach, graph_type, algorithm, values.iloc[[-1]]
+)
 
         plt.figure(0)
         plt.plot(timesteps, values, linestyle='-')
