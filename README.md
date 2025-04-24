@@ -85,11 +85,11 @@ python -c "import mujoco_py"
 
 3. **Running Experiments on PACE:**
 
-Submit a training job (i.e., Soft Actor-Critic):
+Submit a training job (i.e., DDPG):
 
 ```bash
 cd sbatch
-sbatch sac.sbatch
+sbatch ddpg_gen_v2.sbatch
 ```
 
 4. **View Tensorboard Logs:**
