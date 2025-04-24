@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Dexterous hand manipulation remains a challenging problem in robotics due to the high dimensionality and complexity of motor control. This project explores deep reinforcement learning (DRL) methods to train a robotic hand to perform pen manipulation tasks, such as spinning a pen using the Shadow Dexterous Hand from [Gymnasium Robotics](https://gymnasium.farama.org/environments/robotics/).
+Dexterous hand manipulation remains a challenging problem in robotics due to the high dimensionality and complexity of motor control. This project explores deep reinforcement learning (DRL) methods to train a robotic hand to perform pen manipulation tasks, such as spinning a pen using the Shadow Dexterous Hand from [Gymnasium Robotics](https://robotics.farama.org/).
 
 We evaluate:
 
