@@ -93,6 +93,7 @@ sbatch sac.sbatch
 ```
 
 4. **View Tensorboard Logs:**
+
    ```bash
    tensorboard --logdir runs/
    ```
