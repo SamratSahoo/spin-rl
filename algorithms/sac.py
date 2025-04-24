@@ -1,4 +1,4 @@
-# docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/sac/#sac_continuous_actionpy
+# Implementation Based on Clean RL: https://github.com/vwxyzjn/cleanrl
 import os
 import random
 import time
@@ -19,7 +19,6 @@ from gymnasium import spaces
 
 GOAL_SIZE = 4
 # Note inputs to nets here is observation + goal, not just observation
-# ALGO LOGIC: initialize agent here:
 class SoftQNetwork(nn.Module):
     def __init__(self, env, goal_size=0):
         super().__init__()
@@ -50,7 +49,6 @@ class Actor(nn.Module):
         self.fc2 = nn.Linear(256, 256)
         self.fc_mean = nn.Linear(256, np.prod(env.single_action_space.shape))
         self.fc_logstd = nn.Linear(256, np.prod(env.single_action_space.shape))
-        # action rescaling
         self.register_buffer(
             "action_scale",
             torch.tensor(
@@ -72,7 +70,7 @@ class Actor(nn.Module):
         mean = self.fc_mean(x)
         log_std = self.fc_logstd(x)
         log_std = torch.tanh(log_std)
-        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)  # From SpinUp / Denis Yarats
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1) 
 
         return mean, log_std
 
@@ -80,11 +78,10 @@ class Actor(nn.Module):
         mean, log_std = self(x)
         std = log_std.exp()
         normal = torch.distributions.Normal(mean, std)
-        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        x_t = normal.rsample()
         y_t = torch.tanh(x_t)
         action = y_t * self.action_scale + self.action_bias
         log_prob = normal.log_prob(x_t)
-        # Enforcing Action Bound
         log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6)
         log_prob = log_prob.sum(1, keepdim=True)
         mean = torch.tanh(mean) * self.action_scale + self.action_bias
@@ -188,10 +185,8 @@ class SACTrainer:
 
         start_time = time.time()
 
-        # TRY NOT TO MODIFY: start the game
         obs, _ = self.envs.reset(seed=self.seed)
         for global_step in range(total_timesteps):
-            # ALGO LOGIC: put action logic here
             if global_step < self.learning_starts:
                 actions = np.array(
                     [self.envs.single_action_space.sample() for _ in range(self.envs.num_envs)])
@@ -200,10 +195,8 @@ class SACTrainer:
                 actions, _, _ = actor.get_action(torch.Tensor(obs_for_action).to(self.device))
                 actions = actions.detach().cpu().numpy()
 
-            # TRY NOT TO MODIFY: execute the game and log data.
             next_obs, rewards, terminations, truncations, infos = self.envs.step(actions)
 
-            # TRY NOT TO MODIFY: record rewards for plotting purposes
             if "final_info" in infos:
                 for reward in infos["final_info"]["episode"]["r"]:
                     print(f"global_step={global_step}, episodic_return={reward}")
@@ -212,7 +205,6 @@ class SACTrainer:
                 for length in infos["final_info"]["episode"]["l"]:
                     self.writer.add_scalar("charts/episodic_length", length, global_step)
 
-            # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
             real_next_obs = next_obs.copy()
             for idx, is_done in enumerate(np.logical_or(terminations, truncations)):
                 if is_done:
@@ -223,10 +215,8 @@ class SACTrainer:
             
             self.rb.add(obs_to_add, next_obs_to_add, actions, rewards, terminations, infos)
 
-            # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs
 
-            # ALGO LOGIC: training.
             if global_step > self.learning_starts:
                 data = self.rb.sample(self.batch_size)
                 with torch.no_grad():
@@ -242,15 +232,14 @@ class SACTrainer:
                 qf2_loss = F.mse_loss(qf2_a_values, next_q_value)
                 qf_loss = qf1_loss + qf2_loss
 
-                # optimize the model
                 q_optimizer.zero_grad()
                 qf_loss.backward()
                 q_optimizer.step()
 
-                if global_step % self.policy_frequency == 0:  # TD 3 Delayed update support
+                if global_step % self.policy_frequency == 0: 
                     for _ in range(
                         self.policy_frequency
-                    ):  # compensate for the delay by doing 'actor_update_interval' instead of 1
+                    ):  
                         pi, log_pi, _ = actor.get_action(torch.tensor(data.observations, dtype=torch.float32))
                         qf1_pi = qf1(torch.tensor(data.observations, dtype=torch.float32), pi)
                         qf2_pi = qf2(torch.tensor(data.observations, dtype=torch.float32), pi)
@@ -271,7 +260,6 @@ class SACTrainer:
                             a_optimizer.step()
                             alpha = log_alpha.exp().item()
 
-                # update the target networks
                 if global_step % self.target_network_frequency == 0:
                     for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
                         target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)

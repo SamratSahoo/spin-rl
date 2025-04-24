@@ -139,7 +139,6 @@ class PPOTrainer:
         next_done = torch.zeros(self.num_envs).to(self.device)
 
         for iteration in range(1, self.num_iterations + 1):
-            # Annealing the rate if instructed to do so.
             if self.anneal_lr:
                 frac = 1.0 - (iteration - 1.0) / self.num_iterations
                 lrnow = frac * self.learning_rate
@@ -150,14 +149,12 @@ class PPOTrainer:
                 obs[step] = next_obs
                 dones[step] = next_done
 
-                # ALGO LOGIC: action logic
                 with torch.no_grad():
                     action, logprob, _, value = agent.get_action_and_value(next_obs)
                     values[step] = value.flatten()
                 actions[step] = action
                 logprobs[step] = logprob
 
-                # TRY NOT TO MODIFY: execute the game and log data.
                 next_obs, reward, terminations, truncations, infos = self.envs.step(action.cpu().numpy())
                 next_done = np.logical_or(terminations, truncations)
                 rewards[step] = torch.tensor(reward).to(self.device).view(-1)
@@ -172,7 +169,6 @@ class PPOTrainer:
                     for length in infos["final_info"]["episode"]["l"]:
                         self.writer.add_scalar("charts/episodic_length", length, global_step)
 
-            # bootstrap value if not done
             with torch.no_grad():
                 next_value = agent.get_value(next_obs).reshape(1, -1)
                 advantages = torch.zeros_like(rewards).to(self.device)
@@ -188,7 +184,6 @@ class PPOTrainer:
                     advantages[t] = lastgaelam = delta + self.gamma * self.gae_lambda * nextnonterminal * lastgaelam
                 returns = advantages + values
 
-            # flatten the batch
             b_obs = obs.reshape((-1,) + (np.array(self.envs.single_observation_space['observation'].shape).prod() + self.goal_size,))
             b_logprobs = logprobs.reshape(-1)
             b_actions = actions.reshape((-1,) + self.envs.single_action_space.shape)
@@ -196,7 +191,6 @@ class PPOTrainer:
             b_returns = returns.reshape(-1)
             b_values = values.reshape(-1)
 
-            # Optimizing the policy and value network
             b_inds = np.arange(self.batch_size)
             clipfracs = []
             for epoch in range(self.update_epochs):
@@ -210,7 +204,6 @@ class PPOTrainer:
                     ratio = logratio.exp()
 
                     with torch.no_grad():
-                        # calculate approx_kl http://joschu.net/blog/kl-approx.html
                         old_approx_kl = (-logratio).mean()
                         approx_kl = ((ratio - 1) - logratio).mean()
                         clipfracs += [((ratio - 1.0).abs() > self.clip_coef).float().mean().item()]
@@ -219,12 +212,10 @@ class PPOTrainer:
                     if self.norm_adv:
                         mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
 
-                    # Policy loss
                     pg_loss1 = -mb_advantages * ratio
                     pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - self.clip_coef, 1 + self.clip_coef)
                     pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
-                    # Value loss
                     newvalue = newvalue.view(-1)
                     if self.clip_vloss:
                         v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
@@ -254,7 +245,6 @@ class PPOTrainer:
             var_y = np.var(y_true)
             explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
-            # TRY NOT TO MODIFY: record rewards for plotting purposes
             self.writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
             self.writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
             self.writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)

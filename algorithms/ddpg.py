@@ -1,3 +1,5 @@
+# Implementation Based on Clean RL: https://github.com/vwxyzjn/cleanrl
+
 import os
 import random
 import time
@@ -17,7 +19,6 @@ from algorithms.utils import make_env, transform_obs
 
 
 
-# ALGO LOGIC: initialize agent here:
 class QNetwork(nn.Module):
     def __init__(self, env, goal_size=0):
         super().__init__()
@@ -39,7 +40,6 @@ class Actor(nn.Module):
         self.fc1 = nn.Linear(np.array(env.single_observation_space['observation'].shape).prod() + goal_size, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc_mu = nn.Linear(256, np.prod(env.single_action_space.shape))
-        # action rescaling
         self.register_buffer(
             "action_scale", torch.tensor((env.action_space.high - env.action_space.low) / 2.0, dtype=torch.float32)
         )
@@ -129,7 +129,6 @@ class DDPGTrainer:
     
         obs, _ = self.envs.reset(seed=self.seed)
         for global_step in range(timesteps):
-            # ALGO LOGIC: put action logic here
             if global_step < self.learning_starts:
                 actions = np.array([self.envs.single_action_space.sample()])
             else:
@@ -139,10 +138,8 @@ class DDPGTrainer:
                     actions += torch.normal(0, self.actor.action_scale * self.exploration_noise)
                     actions = actions.cpu().numpy().clip(self.envs.single_action_space.low, self.envs.single_action_space.high)
 
-            # TRY NOT TO MODIFY: execute the game and log data.
             next_obs, rewards, terminations, truncations, infos = self.envs.step(actions)
 
-            # TRY NOT TO MODIFY: record rewards for plotting purposes
             if "final_info" in infos:
                 for reward in infos["final_info"]["episode"]["r"]:
                     print(f"global_step={global_step}, episodic_return={reward}")
@@ -151,7 +148,6 @@ class DDPGTrainer:
                 for length in infos["final_info"]["episode"]["l"]:
                     self.writer.add_scalar("charts/episodic_length", length, global_step)
                 
-            # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
             real_next_obs = next_obs.copy()
             for idx, is_done in enumerate(np.logical_or(terminations, truncations)):
                 if is_done:
@@ -162,10 +158,8 @@ class DDPGTrainer:
 
             self.rb.add(obs_to_add, next_obs_to_add, actions, rewards, terminations, infos)
 
-            # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
             obs = next_obs
 
-            # ALGO LOGIC: training.
             if global_step > self.learning_starts:
                 data = self.rb.sample(self.batch_size)
                 with torch.no_grad():
@@ -176,7 +170,6 @@ class DDPGTrainer:
                 qf1_a_values = self.qf1(data.observations, data.actions).view(-1)
                 qf1_loss = F.mse_loss(qf1_a_values, next_q_value)
 
-                # optimize the model
                 self.q_optimizer.zero_grad()
                 qf1_loss.backward()
                 self.q_optimizer.step()
@@ -187,7 +180,6 @@ class DDPGTrainer:
                     actor_loss.backward()
                     self.actor_optimizer.step()
 
-                    # update the target network
                     for param, target_param in zip(self.actor.parameters(), self.target_actor.parameters()):
                         target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
                     for param, target_param in zip(self.qf1.parameters(), self.qf1_target.parameters()):
